@@ -37,12 +37,6 @@ scheme --script my-compare-tests-hw2-CSE.scm | grep TESTS
 
 
 
-# --huge-------------------------------------------------------
-
-echo HW2 godzilla:
-scheme --script my-giant-compare-test.scm
-
-
 
 
 
