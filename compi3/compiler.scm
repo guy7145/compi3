@@ -1192,3 +1192,72 @@
       (run sexpr *error-continuation*))))
 
 (define parse tag-parse)
+
+;; ************************************************************************************************************************************************************************************
+;;
+
+(define ^scanner
+    (lambda (f)
+    (compose-patterns
+				(pattern-rule 
+				`(var ,(? 'var))
+				(lambda(var) `(var ,var)))
+				
+				(pattern-rule 
+				`(const ,(? 'const))
+				(lambda(const) `(const ,const)))
+				
+				(pattern-rule 
+				`(if3 ,(? 'test) ,(? 'dit) ,(? 'dif))
+				(lambda(test dit dif) `(if3 ,(f test) ,(f dit) ,(f dif))))
+				
+				(pattern-rule 
+				`(def ,(? 'var-name) ,(? 'val))
+				(lambda(var-name val) `(def ,var-name ,(f val))))
+				
+				(pattern-rule
+				`(lambda-simple () ,(? 'body))
+				(lambda (body) (f body)))
+				
+				(pattern-rule 
+				`(lambda-simple ,(? 'args list?) ,(? 'exprs))
+				(lambda(args exprs)
+				`(lambda-simple ,args ,(f exprs))))
+				
+				(pattern-rule 
+				`(lambda-opt ,(? 'args list?) ,(? 'rest) ,(? 'exprs))
+				(lambda(args rest exprs) `(lambda-opt ,args ,rest ,(f exprs))))
+				
+				(pattern-rule 
+				`(lambda-var ,(? 'args) ,(? 'exprs))
+				(lambda(args exprs) `(lambda-var ,args ,(f exprs))))
+				
+				(pattern-rule 
+				`(applic ,(? 'func) ,(? 'exprs list?))
+				(lambda(func exprs) `(applic ,(f func) ,(map f exprs))))
+				
+				(pattern-rule 
+				`(or ,(? 'args list?))
+				(lambda(args) `(or ,(map f args))))
+				
+				(pattern-rule 
+				`(set ,(? 'var) ,(? 'val))
+				(lambda(var val) `(set ,(f var) ,(f val))))
+				
+				(pattern-rule 
+				`(seq ,(? 'exprs list?))
+				(lambda(exprs) `(seq ,(map f exprs)))))))
+
+(define remove-applic-lambda-nil
+	(let ((run
+                (compose-patterns
+			(pattern-rule 
+			`(lambda-simple ,(? 'args list?) ,(? 'exprs))
+			(lambda(args exprs)
+			`(lambda-simple ,args ,(remove-applic-lambda-nil exprs))))
+			
+			(^scanner remove-applic-lambda-nil)
+			)))
+		(lambda (e)
+			(run e (lambda () (error 'parse (format "I can't recognize this: ~s" e)))))))
+
