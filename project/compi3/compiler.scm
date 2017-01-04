@@ -1195,7 +1195,7 @@
 
 ;; ************************************************************************************************************************************************************************************
 ;;
-
+(load "tdd-tools.scm")
 (define remove-applic-lambda-nil
   (let ((run (compose-patterns
               (pattern-rule
@@ -1214,9 +1214,13 @@
                `(def ,(? 'var-name) ,(? 'val))
                (lambda (var-name val) `(def ,var-name ,(remove-applic-lambda-nil val))))
 
-              (pattern-rule ;; here
-               `(lambda-simple () ,(? 'body))
-               (lambda (body) (remove-applic-lambda-nil body)))
+              (let ((lambda-nil-body-get
+                     (pattern-rule
+                      `(lambda-simple () ,(? 'body))
+                      (lambda (body) body))))
+                (pattern-rule ;; here
+                 `(applic ,(? 'lambda-nil (lambda (e) (lambda-nil-body-get e (lambda () #f)))) ,(? 'args))
+                 (lambda (lambda-nil args) (remove-applic-lambda-nil (lambda-nil-body-get lambda-nil (lambda () #f))))))
 
               (pattern-rule
                `(lambda-simple ,(? 'args list?) ,(? 'body))
@@ -1260,7 +1264,7 @@
                (lambda (var val) `(box-set ,(remove-applic-lambda-nil var) ,(remove-applic-lambda-nil val))))
               
               )))
-
     (lambda (e)
-      (run e (lambda () (error 'parse (format "I can't recognize this: ~s" e)))))))
+      (run e (lambda () (error 'remove-applic-lambda-nil (format "I can't recognize this: ~s" e)))))))
+
 
