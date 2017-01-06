@@ -661,7 +661,7 @@
          <UnquoteAndSpliced>
          )))
 
-;*************************************************************************************************
+                                        ;*************************************************************************************************
 
 (load "pattern-matcher.scm")
 
@@ -825,13 +825,13 @@
    `(cond ,(? 'expr) . ,(? 'exprs))
    (lambda (head tail)
      (letrec ((cond->if (lambda (lst)
-			  (if (null? lst)
-			      (void)
-			      (if (equal? 'else (caar lst))
-				  (beginify (cdar lst))
-				  `(if ,(caar lst)
-				       ,(beginify (cdar lst))
-				       ,(cond->if (cdr lst))))))))
+                          (if (null? lst)
+                              (void)
+                              (if (equal? 'else (caar lst))
+                                  (beginify (cdar lst))
+                                  `(if ,(caar lst)
+                                       ,(beginify (cdar lst))
+                                       ,(cond->if (cdr lst))))))))
        (parse (cond->if `(,head ,@tail)))))))
 
 #| .:: define rules ::. ______________________________________________________________________________________________________________________________________________________|#
@@ -851,18 +851,18 @@
         (beginify (cons body (car rest-body))))))
 
 (define <define-mit-rule-var>
-  (pattern-rule 
+  (pattern-rule
    `(define (,(? 'object) . ,(? 'var-arg)) ,(? 'body) . ,(? 'rest-body))
    (lambda (object var-arg body . rest-body)
      (let ((body (merge-bodies body rest-body)))
        `(def ,(parse object) ,(parse `(lambda ,var-arg ,body)))
-   ))))
+       ))))
 
 (define <define-mit-rule-simple-opt>
   (pattern-rule
    `(define (,(? 'object) ,(? 'args)) ,(? 'body))
-   (lambda (object args body . rest-body) 
-       `(def ,(parse object) ,(parse `(lambda ,args ,body))))))
+   (lambda (object args body . rest-body)
+     `(def ,(parse object) ,(parse `(lambda ,args ,body))))))
 
 (define <define-mit-rule>
   (compose-patterns
@@ -958,17 +958,17 @@
 (define <let-rule>
   (lambda (e fail-cont)
     ((pattern-rule
-   `(let (,(? 'args) . ,(? 'rest)) ,(? 'body) . ,(? 'rest))
-   (lambda (args-head rest body . rest-body)
-     (let ((args (if (null? rest)
-		     `(,args-head)
-		     `(,args-head ,@rest)))
-	   (body (if (null? rest-body)
-		     `(,body)
-		     `(,body ,@(car rest-body)))))
-       (if (list-is-duplicative? (map car args))
-	   (fail-cont)
-	   (parse `((lambda ,(map car args) ,@body) ,@(map cadr args))))))) e fail-cont)))
+      `(let (,(? 'args) . ,(? 'rest)) ,(? 'body) . ,(? 'rest))
+      (lambda (args-head rest body . rest-body)
+        (let ((args (if (null? rest)
+                        `(,args-head)
+                        `(,args-head ,@rest)))
+              (body (if (null? rest-body)
+                        `(,body)
+                        `(,body ,@(car rest-body)))))
+          (if (list-is-duplicative? (map car args))
+              (fail-cont)
+              (parse `((lambda ,(map car args) ,@body) ,@(map cadr args))))))) e fail-cont)))
 
 (define <let*-no-args-rule>
   (pattern-rule
@@ -982,17 +982,17 @@
    `(let* (,(? 'args) . ,(? 'rest)) ,(? 'body) . ,(? 'rest))
    (lambda (args-head rest head-body . rest-body)
      (letrec ((args (if (null? rest)
-			`(,args-head)
-			`(,args-head ,@rest)))
-	      (body (if (null? rest-body)
-			`(,head-body)
-			`(,head-body ,@(car rest-body))))
-	      (let*->encapsulated-lambdas (lambda (args body)
-			       (if (null? args)
-				   body
-				   `(((lambda (,(caar args))
-					,@(let*->encapsulated-lambdas (cdr args) body))
-				      ,@(cdar args)))))))
+                        `(,args-head)
+                        `(,args-head ,@rest)))
+              (body (if (null? rest-body)
+                        `(,head-body)
+                        `(,head-body ,@(car rest-body))))
+              (let*->encapsulated-lambdas (lambda (args body)
+                                            (if (null? args)
+                                                body
+                                                `(((lambda (,(caar args))
+                                                     ,@(let*->encapsulated-lambdas (cdr args) body))
+                                                   ,@(cdar args)))))))
        (parse (car (let*->encapsulated-lambdas args body)))))))
 
 (define <letrec-no-args-rule>
@@ -1005,21 +1005,21 @@
 (define <letrec-rule>
   (lambda (e fail-cont)
     ((pattern-rule
-   `(letrec (,(? 'args) . ,(? 'rest)) ,(? 'body) . ,(? 'rest))
-   (lambda (args-head rest head-body . rest-body)
-     (letrec ((args (if (null? rest)
-			`(,args-head)
-			`(,args-head ,@rest)))
-	      (body (if (null? rest-body)
-			`(,head-body)
-			`(,head-body ,@(car rest-body))))
-	      (args->set (lambda (lst)
-			   (if (null? (cdr lst))
-			       `((set! ,(caar lst) ,@(cdar lst)))
-			       `((set! ,(caar lst) ,@(cdar lst)) ,@(args->set (cdr lst)))))))
-       (if (list-is-duplicative? (map car args))
-	   (fail-cont)
-	   (parse `((lambda ,(map car args) ,@(append (args->set args) `(((lambda () ,@body))))) ,@(map (lambda (x) #f) args))))))) e fail-cont)))
+      `(letrec (,(? 'args) . ,(? 'rest)) ,(? 'body) . ,(? 'rest))
+      (lambda (args-head rest head-body . rest-body)
+        (letrec ((args (if (null? rest)
+                           `(,args-head)
+                           `(,args-head ,@rest)))
+                 (body (if (null? rest-body)
+                           `(,head-body)
+                           `(,head-body ,@(car rest-body))))
+                 (args->set (lambda (lst)
+                              (if (null? (cdr lst))
+                                  `((set! ,(caar lst) ,@(cdar lst)))
+                                  `((set! ,(caar lst) ,@(cdar lst)) ,@(args->set (cdr lst)))))))
+          (if (list-is-duplicative? (map car args))
+              (fail-cont)
+              (parse `((lambda ,(map car args) ,@(append (args->set args) `(((lambda () ,@body))))) ,@(map (lambda (x) #f) args))))))) e fail-cont)))
 
 (define <let-rules>
   (compose-patterns
@@ -1047,9 +1047,9 @@
   (lambda (tag)
     (lambda (e)
       (and (pair? e)
-	   (eq? (car e) tag)
-	   (pair? (cdr e))
-	   (null? (cddr e))))))
+           (eq? (car e) tag)
+           (pair? (cdr e))
+           (null? (cddr e))))))
 
 (define quote? (^quote? 'quote))
 (define unquote? (^quote? 'unquote))
@@ -1057,87 +1057,87 @@
 
 (define const?
   (let ((simple-sexprs-predicates
-	 (list boolean? char? number? string?)))
+         (list boolean? char? number? string?)))
     (lambda (e)
       (or (ormap (lambda (p?) (p? e))
-		 simple-sexprs-predicates)
-	  (quote? e)))))
+           simple-sexprs-predicates)
+          (quote? e)))))
 
 (define quotify
   (lambda (e)
     (if (or (null? e)
-	    (pair? e)
-	    (symbol? e)
-	    (vector? e))
-	`',e
-	e)))
+            (pair? e)
+            (symbol? e)
+            (vector? e))
+        `',e
+        e)))
 
 (define unquotify
   (lambda (e)
     (if (quote? e)
-	(cadr e)
-	e)))
+        (cadr e)
+        e)))
 
 (define const-pair?
   (lambda (e)
     (and (quote? e)
-	 (pair? (cadr e)))))
+         (pair? (cadr e)))))
 
 (define expand-qq
   (letrec ((expand-qq
-	    (lambda (e)
-	      (cond ((unquote? e) (cadr e))
-		    ((unquote-splicing? e)
-		     (error 'expand-qq
-		       "unquote-splicing here makes no sense!"))
-		    ((pair? e)
-		     (let ((a (car e))
-			   (b (cdr e)))
-		       (cond ((unquote-splicing? a)
-			      `(append ,(cadr a) ,(expand-qq b)))
-			     ((unquote-splicing? b)
-			      `(cons ,(expand-qq a) ,(cadr b)))
-			     (else `(cons ,(expand-qq a) ,(expand-qq b))))))
-		    ((vector? e) `(list->vector ,(expand-qq (vector->list e))))
-		    ((or (null? e) (symbol? e)) `',e)
-		    (else e))))
-	   (optimize-qq-expansion (lambda (e) (optimizer e (lambda () e))))
-	   (optimizer
-	    (compose-patterns
-	     (pattern-rule
-	      `(append ,(? 'e) '())
-	      (lambda (e) (optimize-qq-expansion e)))
-	     (pattern-rule
-	      `(append ,(? 'c1 const-pair?) (cons ,(? 'c2 const?) ,(? 'e)))
-	      (lambda (c1 c2 e)
-		(let ((c (quotify `(,@(unquotify c1) ,(unquotify c2))))
-		      (e (optimize-qq-expansion e)))
-		  (optimize-qq-expansion `(append ,c ,e)))))
-	     (pattern-rule
-	      `(append ,(? 'c1 const-pair?) ,(? 'c2 const-pair?))
-	      (lambda (c1 c2)
-		(let ((c (quotify (append (unquotify c1) (unquotify c2)))))
-		  c)))
-	     (pattern-rule
-	      `(append ,(? 'e1) ,(? 'e2))
-	      (lambda (e1 e2)
-		(let ((e1 (optimize-qq-expansion e1))
-		      (e2 (optimize-qq-expansion e2)))
-		  `(append ,e1 ,e2))))
-	     (pattern-rule
-	      `(cons ,(? 'c1 const?) (cons ,(? 'c2 const?) ,(? 'e)))
-	      (lambda (c1 c2 e)
-		(let ((c (quotify (list (unquotify c1) (unquotify c2))))
-		      (e (optimize-qq-expansion e)))
-		  (optimize-qq-expansion `(append ,c ,e)))))
-	     (pattern-rule
-	      `(cons ,(? 'e1) ,(? 'e2))
-	      (lambda (e1 e2)
-		(let ((e1 (optimize-qq-expansion e1))
-		      (e2 (optimize-qq-expansion e2)))
-		  (if (and (const? e1) (const? e2))
-		      (quotify (cons (unquotify e1) (unquotify e2)))
-		      `(cons ,e1 ,e2))))))))
+            (lambda (e)
+              (cond ((unquote? e) (cadr e))
+                    ((unquote-splicing? e)
+                     (error 'expand-qq
+                            "unquote-splicing here makes no sense!"))
+                    ((pair? e)
+                     (let ((a (car e))
+                           (b (cdr e)))
+                       (cond ((unquote-splicing? a)
+                              `(append ,(cadr a) ,(expand-qq b)))
+                             ((unquote-splicing? b)
+                              `(cons ,(expand-qq a) ,(cadr b)))
+                             (else `(cons ,(expand-qq a) ,(expand-qq b))))))
+                    ((vector? e) `(list->vector ,(expand-qq (vector->list e))))
+                    ((or (null? e) (symbol? e)) `',e)
+                    (else e))))
+           (optimize-qq-expansion (lambda (e) (optimizer e (lambda () e))))
+           (optimizer
+            (compose-patterns
+             (pattern-rule
+              `(append ,(? 'e) '())
+              (lambda (e) (optimize-qq-expansion e)))
+             (pattern-rule
+              `(append ,(? 'c1 const-pair?) (cons ,(? 'c2 const?) ,(? 'e)))
+              (lambda (c1 c2 e)
+                (let ((c (quotify `(,@(unquotify c1) ,(unquotify c2))))
+                      (e (optimize-qq-expansion e)))
+                  (optimize-qq-expansion `(append ,c ,e)))))
+             (pattern-rule
+              `(append ,(? 'c1 const-pair?) ,(? 'c2 const-pair?))
+              (lambda (c1 c2)
+                (let ((c (quotify (append (unquotify c1) (unquotify c2)))))
+                  c)))
+             (pattern-rule
+              `(append ,(? 'e1) ,(? 'e2))
+              (lambda (e1 e2)
+                (let ((e1 (optimize-qq-expansion e1))
+                      (e2 (optimize-qq-expansion e2)))
+                  `(append ,e1 ,e2))))
+             (pattern-rule
+              `(cons ,(? 'c1 const?) (cons ,(? 'c2 const?) ,(? 'e)))
+              (lambda (c1 c2 e)
+                (let ((c (quotify (list (unquotify c1) (unquotify c2))))
+                      (e (optimize-qq-expansion e)))
+                  (optimize-qq-expansion `(append ,c ,e)))))
+             (pattern-rule
+              `(cons ,(? 'e1) ,(? 'e2))
+              (lambda (e1 e2)
+                (let ((e1 (optimize-qq-expansion e1))
+                      (e2 (optimize-qq-expansion e2)))
+                  (if (and (const? e1) (const? e2))
+                      (quotify (cons (unquotify e1) (unquotify e2)))
+                      `(cons ,e1 ,e2))))))))
     (lambda (e)
       (optimize-qq-expansion
        (expand-qq e)))))
@@ -1160,31 +1160,31 @@
   (let ((run
          (compose-patterns
           <qq-rule>
-          
+
           <void-rule>
           <const-rule>
           <quote-rule>
           <var-rule>
-          
+
           <if2-rule>
           <if3-rule>
-          
+
           <define-mit-rule>
           <define-rule>
-          
+
           <disj-rule>
-          
+
           <lambda-rule>
-          
+
           <seq-rule-explicit>
-          
+
           <assignment-rule>
           <application-rule>
-          
+
           <and-rule-no-args>
           <and-rule>
           <cond-rule>
-          
+
           <let-rules>
           )
          ))
@@ -1193,9 +1193,13 @@
 
 (define parse tag-parse)
 
-;; ************************************************************************************************************************************************************************************
 ;;
+;; *************************************************************************************************************************************
+;; _________applic-nil_____________________________________________
+;; ________________________________________________________________ 
+
 (load "tdd-tools.scm")
+
 (define remove-applic-lambda-nil
   (let ((run (compose-patterns
               (pattern-rule
@@ -1250,21 +1254,406 @@
               (pattern-rule
                `(seq ,(? 'exprs list?))
                (lambda (exprs) `(seq ,(map remove-applic-lambda-nil exprs))))
-              
+
               (pattern-rule
                `(box ,(? 'var))
                (lambda (var) `(box ,(remove-applic-lambda-nil var))))
-              
+
               (pattern-rule
                `(box-get ,(? 'var))
                (lambda (var) `(box-get ,(remove-applic-lambda-nil var))))
-              
+
               (pattern-rule
                `(box-set ,(? 'var) ,(? 'val))
                (lambda (var val) `(box-set ,(remove-applic-lambda-nil var) ,(remove-applic-lambda-nil val))))
-              
+
               )))
     (lambda (e)
       (run e (lambda () (error 'remove-applic-lambda-nil (format "I can't recognize this: ~s" e)))))))
+
+;; _________eliminate-nested-def___________________________________
+;; ________________________________________________________________
+
+
+(define <<exract-def>>
+  (lambda (pes ret-ds-es)
+    (if (null? pes) (ret-ds-es '() '())
+        (<<exract-def>>
+         (cdr pes)
+         (lambda (ds es)
+           (cond 	((eq? (caar pes) 'def) (ret-ds-es (cons (car pes) ds) es))
+                     ((eq? (caar pes) 'seq)
+                      (<<exract-def>> (cadar pes)
+                                      (lambda (ds1 es1)
+                                        (ret-ds-es (append ds1 ds)
+                                         (append es1 es)))))
+                     (else (ret-ds-es ds (cons (car pes) es)))))))))
+
+(define ^letrec-statement
+  (lambda (args body ^lambda)
+    (<<exract-def>>
+     `(,(eliminate-nested-defines body))
+     (lambda (ds es)
+       (if (null? ds)
+                                        ; dit
+           (if (equal? (length es) 1)
+               (^lambda args (car es))
+               (^lambda args `(seq ,es)))
+                                        ; dif
+           (let ((params
+                  ;;                   def name
+                  (map (lambda (def) (cadadr def)) ds))
+                 (<dummy-values>
+                  (map (lambda (def) `(const #f)) ds))
+                 ;;                                              def-var      def-val
+                 (body `(seq ,(append (map (lambda (def) `(set ,(cadr def) ,(caddr def))) ds) es))))
+             (^lambda args `(applic (lambda-simple ,params ,body) ,<dummy-values>))))
+       ))))
+
+(define eliminate-nested-defines
+  (let ((^lambda-simple (lambda (args body) `(lambda-simple ,args ,body)))
+        (^lambda-opt (lambda (args-opt body) `(lambda-opt ,(car args-opt) ,(cdr args-opt) ,body)))
+        (^lambda-var (lambda (arg body) `(lambda-var ,arg ,body))))
+    (let ((run (compose-patterns
+                (pattern-rule
+                 `(var ,(? 'var))
+                 (lambda (var) `(var ,var)))
+
+                (pattern-rule
+                 `(const ,(? 'const))
+                 (lambda (const) `(const ,const)))
+
+                (pattern-rule
+                 `(if3 ,(? 'test) ,(? 'dit) ,(? 'dif))
+                 (lambda (test dit dif) `(if3 ,(eliminate-nested-defines test) ,(eliminate-nested-defines dit) ,(eliminate-nested-defines dif))))
+
+                (pattern-rule
+                 `(def ,(? 'var-name) ,(? 'val))
+                 (lambda (var-name val) `(def ,var-name ,(eliminate-nested-defines val))))
+
+                (pattern-rule
+                 `(lambda-simple ,(? 'args list?) ,(? 'body))
+                 (lambda (args body)
+                   (^letrec-statement args body ^lambda-simple)))
+
+                (pattern-rule
+                 `(lambda-opt ,(? 'args list?) ,(? 'opt-arg) ,(? 'body))
+                 (lambda (args opt-arg body)
+                   (^letrec-statement (cons args opt-arg) body ^lambda-opt)))
+
+                (pattern-rule
+                 `(lambda-var ,(? 'arg) ,(? 'body))
+                 (lambda (arg body)
+                   (^letrec-statement arg body ^lambda-var)))
+
+                (pattern-rule
+                 `(applic ,(? 'func) ,(? 'exprs list?))
+                 (lambda (func exprs) `(applic ,(eliminate-nested-defines func) ,(map eliminate-nested-defines exprs))))
+
+                (pattern-rule
+                 `(or ,(? 'args list?))
+                 (lambda (args) `(or ,(map eliminate-nested-defines args))))
+
+                (pattern-rule
+                 `(set ,(? 'var) ,(? 'val))
+                 (lambda (var val) `(set ,(eliminate-nested-defines var) ,(eliminate-nested-defines val))))
+
+                (pattern-rule
+                 `(seq ,(? 'exprs list?))
+                 (lambda (exprs) `(seq ,(map eliminate-nested-defines exprs))))
+
+                (pattern-rule
+                 `(box ,(? 'var))
+                 (lambda (var) `(box ,(eliminate-nested-defines var))))
+
+                (pattern-rule
+                 `(box-get ,(? 'var))
+                 (lambda (var) `(box-get ,(eliminate-nested-defines var))))
+
+                (pattern-rule
+                 `(box-set ,(? 'var) ,(? 'val))
+                 (lambda (var val) `(box-set ,(eliminate-nested-defines var) ,(eliminate-nested-defines val))))
+
+                )))
+      (lambda (e)
+        (run e (lambda () (error 'eliminate-nested-defines (format "I can't recognize this: ~s" e))))))))
+
+;; _________pe->lex-pe_____________________________________________
+;; ________________________________________________________________
+
+(define get-var-minor-index
+  (letrec ((get-var-minor-index-i
+            (lambda (v vars i)
+              (cond ((null? vars) -1)
+                    ((equal? (car vars) v) i)
+                    (else (get-var-minor-index-i v (cdr vars) (+ i 1)))))))
+    (lambda (v vars) (get-var-minor-index-i v vars 0))))
+
+(define get-var-major-index
+  (letrec ((get-var-major-index-i (lambda (v vars i)
+                                    (cond ((null? vars) -1)
+                                          ((member v (car vars)) i)
+                                          (get-var-major-index-i v (cdr vars) (+ i 1))))))
+    (lambda (v vars) (get-var-major-index-i v vars 0))))
+
+(define get-element-at-i
+  (lambda (s i)
+    (cond ((< i 0) (error 'get-element-at-i (format "negative index: s=~s i=~s" s i)))
+          ((null? s) (error 'get-element-at-i (format "index out of bounds: s=~s i=~s" s i)))
+          ((equal? 0 i) (car s))
+          (else (get-element-at-i (cdr s) (- i 1))))))
+
+(define pe->lex-pe
+  (let ((run-outer
+         (lambda (cont)
+           (letrec ((run
+                     (lambda (e bvars pvars)
+                       ((compose-patterns
+
+                         (pattern-rule
+                          `(var ,(? 'v))
+                          (lambda (v)
+                            (cond ((member v pvars) `(pvar ,v ,(get-var-minor-index v pvars)))
+                                  ((let ((belonging-list (map (lambda (s) (member v s)) bvars)))
+                                     (fold-left (lambda (acc x) (or x acc)) #f belonging-list))
+                                   (let* ((major (get-var-major-index v bvars))
+                                          (env (get-element-at-i bvars major))
+                                          (minor (get-var-minor-index v env)))
+                                     `(bvar ,v ,major ,minor)))
+                                  (else `(fvar ,v)))))
+
+                         (pattern-rule
+                          `(const ,(? 'const))
+                          (lambda (const) `(const ,const)))
+
+                         (pattern-rule
+                          `(if3 ,(? 'test) ,(? 'dit) ,(? 'dif))
+                          (lambda (test dit dif) `(if3 ,(run test bvars pvars) ,(run dit bvars pvars) ,(run dif bvars pvars))))
+
+                         (pattern-rule
+                          `(def ,(? 'var-name) ,(? 'val))
+                          (lambda (var-name val) `(def ,(run var-name bvars pvars) ,(run val bvars pvars))))
+
+                         (pattern-rule
+                          `(lambda-simple ,(? 'args list?) ,(? 'body))
+                          (lambda (args body)
+                            (let ((bvars `(,pvars ,@bvars)) (pvars args))
+                              `(lambda-simple ,args ,(run body bvars pvars)))))
+
+                         (pattern-rule
+                          `(lambda-opt ,(? 'args list?) ,(? 'opt-arg) ,(? 'body))
+                          (lambda (args opt-arg body)
+                            (let ((bvars `(,pvars ,@bvars)) (pvars `(,@args ,opt-arg)))
+                              `(lambda-opt ,args ,opt-arg ,(run body bvars pvars)))))
+
+                         (pattern-rule
+                          `(lambda-var ,(? 'arg) ,(? 'body))
+                          (lambda (arg body)
+                            (let ((bvars `(,pvars ,@bvars)) (pvars `(,arg)))
+                              `(lambda-var ,arg ,(run body bvars pvars)))))
+
+                         (pattern-rule
+                          `(applic ,(? 'func) ,(? 'exprs list?))
+                          (lambda (func exprs) `(applic ,(run func bvars pvars) ,(map (lambda (e) (run e bvars pvars)) exprs))))
+
+                         (pattern-rule
+                          `(or ,(? 'args list?))
+                          (lambda (args) `(or ,(map (lambda (e) (run e bvars pvars)) args))))
+
+                         (pattern-rule
+                          `(set ,(? 'var) ,(? 'val))
+                          (lambda (var val) `(set ,(run var bvars pvars) ,(run val bvars pvars))))
+
+                         (pattern-rule
+                          `(seq ,(? 'exprs list?))
+                          (lambda (exprs) `(seq ,(map (lambda (e) (run e bvars pvars)) exprs))))
+
+                         (pattern-rule
+                          `(box ,(? 'var))
+                          (lambda (var) `(box ,(run var bvars pvars))))
+
+                         (pattern-rule
+                          `(box-get ,(? 'var))
+                          (lambda (var) `(box-get ,(run var bvars pvars))))
+
+                         (pattern-rule
+                          `(box-set ,(? 'var) ,(? 'val))
+                          (lambda (var val) `(box-set ,(run var bvars pvars) ,(run val bvars pvars))))) e cont))))
+             run))))
+    (lambda (e)
+      ((run-outer (lambda () (error 'pe->lex-pe (format "I can't recognize this: ~s" e)))) e '() '()))))
+
+;; _________annotate-tc____________________________________________
+;; ________________________________________________________________
+
+(define special-map
+  (lambda (f1 f2 s)
+    (cond ((null? s) s)
+          ((null? (cdr s)) (cons (f2 (car s)) '()))
+          (else (cons (f1 (car s)) (special-map f1 f2 (cdr s)))))))
+
+(define is-seq?
+  (lambda (e)
+    ((pattern-rule
+      `(seq ,(? 'exprs list?))
+      (lambda (exprs) #t)) e (lambda () #f))))
+
+(define is-not-seq? (lambda (e) (not (is-seq? e))))
+
+(define annotate-tc
+  (letrec ((run-outer
+            (lambda (cont)
+              (letrec ((run-inner
+                        (lambda (should-annotate?)
+                          (lambda (e)
+                            ((compose-patterns
+                              (pattern-rule
+                               `(var ,(? 'var))
+                               (lambda (var) `(var ,var)))
+                              
+                              (pattern-rule
+                               `(fvar ,(? 'var))
+                               (lambda (var) `(fvar ,var)))
+
+                              (pattern-rule
+                               `(pvar ,(? 'var) ,(? 'minor))
+                               (lambda (var minor) `(pvar ,var ,minor)))
+
+                              (pattern-rule
+                               `(bvar ,(? 'var) ,(? 'major) ,(? 'minor))
+                               (lambda (var major minor) `(var ,var ,major ,minor)))
+
+                              (pattern-rule
+                               `(const ,(? 'const))
+                               (lambda (const) `(const ,const)))
+
+                              (pattern-rule
+                               `(if3 ,(? 'test) ,(? 'dit) ,(? 'dif))
+                               (lambda (test dit dif) `(if3 ,((run-inner #f) test) ,((run-inner #f) dit) ,((run-inner #t) dif))))
+
+                              (pattern-rule
+                               `(def ,(? 'var-name) ,(? 'val))
+                               (lambda (var-name val) `(def ,var-name ,((run-inner #f) val))))
+
+                              (pattern-rule
+                               `(lambda-simple ,(? 'args list?) ,(? 'body))
+                               (lambda (args body)
+                                 `(lambda-simple ,args ,((run-inner (is-not-seq? body)) body))))
+
+                              (pattern-rule
+                               `(lambda-opt ,(? 'args list?) ,(? 'opt-arg) ,(? 'body))
+                               (lambda (args opt-arg body) `(lambda-opt ,args ,opt-arg ,((run-inner (is-not-seq? body)) body))))
+
+                              (pattern-rule
+                               `(lambda-var ,(? 'arg) ,(? 'body))
+                               (lambda (arg body) `(lambda-var ,arg ,((run-inner (is-not-seq? body)) body))))
+
+                              (pattern-rule
+                               `(applic ,(? 'func) ,(? 'exprs list?))
+                               (lambda (func exprs)
+                                 (if should-annotate?
+                                     `(tc-applic ,((run-inner #f) func) ,(map (run-inner #f) exprs))
+                                     `(applic ,((run-inner #f) func) ,(map (run-inner #f) exprs)))))
+
+                              (pattern-rule
+                               `(or ,(? 'args list?))
+                               (lambda (args) `(or ,(special-map (run-inner #f) (run-inner #t) args))))
+
+                              (pattern-rule
+                               `(set ,(? 'var) ,(? 'val))
+                               (lambda (var val) `(set ,((run-inner #f) var) ,((run-inner #f) val))))
+
+                              (pattern-rule
+                               `(seq ,(? 'exprs list?))
+                               (lambda (exprs) `(seq ,(special-map (run-inner #f) (run-inner #t) exprs))))
+
+                              (pattern-rule
+                               `(box ,(? 'var))
+                               (lambda (var) `(box ,((run-inner #f) var))))
+
+                              (pattern-rule
+                               `(box-get ,(? 'var))
+                               (lambda (var) `(box-get ,((run-inner #f) var))))
+
+                              (pattern-rule
+                               `(box-set ,(? 'var) ,(? 'val))
+                               (lambda (var val) `(box-set ,((run-inner #f) var) ,((run-inner #f) val))))) e cont)))))
+                run-inner))))
+    (lambda (e)
+      (((run-outer (lambda () (error 'pe->lex-pe (format "I can't recognize this: ~s" e)))) #f) e))))
+
+
+;; _________box-set________________________________________________
+;; ________________________________________________________________
+
+(define id (lambda (x) x))
+(define box-set id)
+
+(define <recurse-function>
+  (let ((run (compose-patterns
+              (pattern-rule
+               `(var ,(? 'var))
+               (lambda (var) `(var ,var)))
+
+              (pattern-rule
+               `(const ,(? 'const))
+               (lambda (const) `(const ,const)))
+
+              (pattern-rule
+               `(if3 ,(? 'test) ,(? 'dit) ,(? 'dif))
+               (lambda (test dit dif) `(if3 ,(<recurse-function> test) ,(<recurse-function> dit) ,(<recurse-function> dif))))
+
+              (pattern-rule
+               `(def ,(? 'var-name) ,(? 'val))
+               (lambda (var-name val) `(def ,var-name ,(<recurse-function> val))))
+
+              (pattern-rule
+               `(lambda-simple ,(? 'args list?) ,(? 'body))
+               (lambda (args body)
+                 `(lambda-simple ,args ,(<recurse-function> body))))
+
+              (pattern-rule
+               `(lambda-opt ,(? 'args list?) ,(? 'opt-arg) ,(? 'body))
+               (lambda (args opt-arg body) `(lambda-opt ,args ,opt-arg ,(<recurse-function> body))))
+
+              (pattern-rule
+               `(lambda-var ,(? 'arg) ,(? 'body))
+               (lambda (arg body) `(lambda-var ,arg ,(<recurse-function> body))))
+
+              (pattern-rule
+               `(applic ,(? 'func) ,(? 'exprs list?))
+               (lambda (func exprs) `(applic ,(<recurse-function> func) ,(map <recurse-function> exprs))))
+
+              (pattern-rule
+               `(or ,(? 'args list?))
+               (lambda (args) `(or ,(map <recurse-function> args))))
+
+              (pattern-rule
+               `(set ,(? 'var) ,(? 'val))
+               (lambda (var val) `(set ,(<recurse-function> var) ,(<recurse-function> val))))
+
+              (pattern-rule
+               `(seq ,(? 'exprs list?))
+               (lambda (exprs) `(seq ,(map <recurse-function> exprs))))
+
+              (pattern-rule
+               `(box ,(? 'var))
+               (lambda (var) `(box ,(<recurse-function> var))))
+
+              (pattern-rule
+               `(box-get ,(? 'var))
+               (lambda (var) `(box-get ,(<recurse-function> var))))
+
+              (pattern-rule
+               `(box-set ,(? 'var) ,(? 'val))
+               (lambda (var val) `(box-set ,(<recurse-function> var) ,(<recurse-function> val))))
+              )))
+    (lambda (e)
+      (run e (lambda () (error '<recurse-function> (format "I can't recognize this: ~s" e)))))))
+
+
+
+
+
 
 

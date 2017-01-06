@@ -40,14 +40,18 @@ echo HW2 part2 my compare tests:
 scheme --script my-compare-tests-hw2-CSE.scm | grep TESTS
 
 COMMENT
+
 # --HW3-------------------------------------------------------
 
 echo HW3 tdd:
 scheme --script test-hw3.scm
 
+echo HW3 compare tests:
+#echo commented out...
+scheme --script compare-tests-hw3.scm
 
-
-
+echo HW3 my compare tests:
+scheme --script my-compare-tests-hw3.scm
 
 
 
