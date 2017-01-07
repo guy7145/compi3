@@ -297,7 +297,7 @@
                                  (car ps)
                                  (loop (cdr ps)))))))
                   (lambda ps (loop ps))))))
-  (display-colored (parse input))
+  (display-colored-2 (parse input))
   (ASSERT-EQUAL (my-full-cycle input) (full-cycle input)))
 
 
@@ -377,5 +377,8 @@
           (tc-applic (fvar quote?) ((pvar e 0))))
          )))
    ((applic (fvar list) ((fvar boolean?) (fvar char?) (fvar number?) (fvar string?))))))
+
+
+(display-colored-BIG (get-var-major-index 'message '((marker) (s ret-match ret-none) (p message) ())))
 
 (newline)

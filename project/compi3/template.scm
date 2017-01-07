@@ -62,3 +62,42 @@
       (run e (lambda () (error '<recurse-function> (format "I can't recognize this: ~s" e)))))))
 
 
+;; OURs
+;; 
+'(def (fvar quotify) 
+  (lambda-simple (e) 
+   (if3 
+    ; test
+    (or ((applic (fvar null?) ((pvar e 0))) 
+         (applic (fvar pair?) ((pvar e 0))) 
+         (applic (fvar symbol?) ((pvar e 0))) 
+         (tc-applic (fvar vector?) ((pvar e 0)))))
+    ; dit
+    (tc-applic 
+     (fvar cons) 
+     ((const quote) 
+      (applic (fvar cons) 
+       ((pvar e 0) 
+        (const ())))))
+    ; dif
+    (pvar e 0))))
+
+;; Mayer's
+;; 
+'(def (fvar quotify) 
+  (lambda-simple (e) 
+   (if3 
+    ;test
+    (or ((applic (fvar null?) ((pvar e 0))) 
+         (applic (fvar pair?) ((pvar e 0))) 
+         (applic (fvar symbol?) ((pvar e 0))) 
+         (applic (fvar vector?) ((pvar e 0)))))
+    ; dit
+    (tc-applic 
+     (fvar cons) 
+     ((const quote) 
+      (applic (fvar cons) 
+       ((pvar e 0) 
+        (const ())))))
+    ; dif
+    (pvar e 0))))

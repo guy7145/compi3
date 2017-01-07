@@ -297,8 +297,45 @@
                                  (car ps)
                                  (loop (cdr ps)))))))
                   (lambda ps (loop ps))))))
-  (display-colored (parse input))
+  (display-colored-2 (parse input))
   (ASSERT-EQUAL (my-full-cycle input) (full-cycle input)))
+
+
+'(def (var caten) 
+  (applic 
+   (lambda-simple 
+    (binary-caten loop) 
+    (seq ((set 
+           (var binary-caten) 
+           (lambda-simple (p1 p2) 
+            (lambda-simple (s ret-match ret-none) 
+             (applic (var p1) 
+              ((var s) 
+               (lambda-simple (e1 s) 
+                (applic (var p2) 
+                 ((var s) 
+                  (lambda-simple (e2 s) 
+                   (applic (var ret-match) 
+                    ((applic 
+                      (var cons) 
+                      ((var e1) (var e2))) (var s)))) (var ret-none)))) (var ret-none)))))) 
+          (set (var loop) 
+           (lambda-simple (ps) 
+            (if3 
+             (applic 
+              (var null?) 
+              ((var ps))) 
+             (var <epsilon>) 
+             (applic 
+              (var binary-caten) 
+              ((applic (var car) 
+                ((var ps))) 
+               (applic (var loop) 
+                ((applic (var cdr) ((var ps))))))))))
+          (applic 
+           (lambda-simple () 
+            (lambda-var ps (applic (var loop) ((var ps))))) ())))
+    ) ((const #f) (const #f))))
 
 '(def (fvar otherwise)
   (lambda-simple (p message)
@@ -340,5 +377,8 @@
           (tc-applic (fvar quote?) ((pvar e 0))))
          )))
    ((applic (fvar list) ((fvar boolean?) (fvar char?) (fvar number?) (fvar string?))))))
+
+
+(display-colored-BIG (get-var-major-index 'message '((marker) (s ret-match ret-none) (p message) ())))
 
 (newline)
