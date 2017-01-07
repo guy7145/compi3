@@ -51,7 +51,8 @@ echo HW3 compare tests:
 scheme --script compare-tests-hw3.scm
 
 echo HW3 my compare tests:
-scheme --script my-compare-tests-hw3.scm
+echo commented out...
+#scheme --script my-compare-tests-hw3.scm
 
 
 

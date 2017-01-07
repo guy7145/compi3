@@ -1198,8 +1198,6 @@
 ;; _________applic-nil_____________________________________________
 ;; ________________________________________________________________ 
 
-(load "tdd-tools.scm")
-
 (define remove-applic-lambda-nil
   (let ((run (compose-patterns
               (pattern-rule
@@ -1409,7 +1407,7 @@
            (letrec ((run
                      (lambda (e bvars pvars)
                        ((compose-patterns
-
+                         
                          (pattern-rule
                           `(var ,(? 'v))
                           (lambda (v)
@@ -1510,7 +1508,7 @@
                               (pattern-rule
                                `(var ,(? 'var))
                                (lambda (var) `(var ,var)))
-                              
+
                               (pattern-rule
                                `(fvar ,(? 'var))
                                (lambda (var) `(fvar ,var)))
@@ -1521,7 +1519,7 @@
 
                               (pattern-rule
                                `(bvar ,(? 'var) ,(? 'major) ,(? 'minor))
-                               (lambda (var major minor) `(var ,var ,major ,minor)))
+                               (lambda (var major minor) `(bvar ,var ,major ,minor)))
 
                               (pattern-rule
                                `(const ,(? 'const))
@@ -1529,7 +1527,7 @@
 
                               (pattern-rule
                                `(if3 ,(? 'test) ,(? 'dit) ,(? 'dif))
-                               (lambda (test dit dif) `(if3 ,((run-inner #f) test) ,((run-inner #f) dit) ,((run-inner #t) dif))))
+                               (lambda (test dit dif) `(if3 ,((run-inner #f) test) ,((run-inner #t) dit) ,((run-inner #t) dif))))
 
                               (pattern-rule
                                `(def ,(? 'var-name) ,(? 'val))
@@ -1586,10 +1584,217 @@
 ;; _________box-set________________________________________________
 ;; ________________________________________________________________
 
-(define id (lambda (x) x))
-(define box-set id)
+(define validate-candidate
+  (lambda (<v> candidate)
+    (cond ((equal? <v> candidate) <v>)
+          ((equal? '<set> candidate) '<set>)
+          ((equal? '<get-set> candidate) '<get-set>)
+          (else #f))))
 
-(define <recurse-function>
+(define accumulate-candidate
+  (lambda (<v>)
+    (lambda (x y)
+      (cond ((equal? x <v>) (if (equal? y '<set>) '<get-set> <v>))
+            ((equal? x '<set>) (if (equal? y <v>) '<get-set> '<set>))
+            ((equal? x '<get-set>) '<get-set>)
+            (else y)))))
+
+
+(define check-var-usage
+  (let ((run-outer
+         (lambda (<v> cont)
+           (letrec ((run
+                     (lambda (is-bound? e)
+                       ((compose-patterns
+                         (pattern-rule
+                          `(var ,(? 'var))
+                          (lambda (var) var))
+
+                         (pattern-rule
+                          `(const ,(? 'const))
+                          (lambda (const) #f))
+
+                         (pattern-rule
+                          `(if3 ,(? 'test) ,(? 'dit) ,(? 'dif))
+                          (lambda (test dit dif)
+                            (let ((res-test (run test))
+                                  (res-dif (run dif))
+                                  (res-dit (run dit))
+                                  (accumulate-candidate (accumulate-candidate <v>)))
+                              (accumulate-candidate res-test (accumulate-candidate res-dif res-dit)))))
+
+                         (pattern-rule
+                          `(def ,(? 'var-name) ,(? 'val))
+                          (lambda (var-name val)
+                            (if (equal? var-name <v>)
+                                #f
+                                (validate-candidate <v> (run val)))))
+
+                         (pattern-rule
+                          `(lambda-simple ,(? 'args list?) ,(? 'body))
+                          (lambda (args body)
+                            (if (member <v> args)
+                                #f
+                                (validate-candidate <v> (run body)))))
+
+                         (pattern-rule
+                          `(lambda-opt ,(? 'args list?) ,(? 'opt-arg) ,(? 'body))
+                          (lambda (args opt-arg body)
+                            (if (or (member <v> args) (equal? <v> opt-arg))
+                                #f
+                                (validate-candidate <v> (run body)))))
+
+                         (pattern-rule
+                          `(lambda-var ,(? 'arg) ,(? 'body))
+                          (lambda (arg body)
+                            (if (equal? <v> arg)
+                                #f
+                                (validate-candidate <v> (run body)))))
+
+                         (pattern-rule
+                          `(applic ,(? 'func) ,(? 'exprs list?))
+                          (lambda (func exprs)
+                            (let ((results `(,(run func) ,@(map run exprs))))
+                              (let ((results (map (lambda (x) (validate-candidate <v> x)) results)))
+                                (fold-left (accumulate-candidate <v>) #f results)))))
+
+                         (pattern-rule
+                          `(or ,(? 'args list?))
+                          (lambda (args)
+                            (let ((results (map run args)))
+                              (let ((results (map (lambda (x) (validate-candidate <v> x)) results)))
+                                (fold-left (accumulate-candidate <v>) #f results)))))
+
+                         (pattern-rule
+                          `(set ,(? 'var) ,(? 'val))
+                          (lambda (var val)
+                            (let ((val-res (run val)))
+                              (if (equal? <v> (run var))
+                                  ((accumulate-candidate <v>) '<set> val-res)
+                                  val-res))))
+
+                         (pattern-rule
+                          `(seq ,(? 'exprs list?))
+                          (lambda (exprs)
+                            (let ((results (map run exprs)))
+                              (let ((results (map (lambda (x) (validate-candidate <v> x)) results)))
+                                (fold-left (accumulate-candidate <v>) #f results)))))
+
+                         ;; TODO:?
+                         (pattern-rule
+                          `(box ,(? 'var))
+                          (lambda (var)
+                            #f))
+                                        ;(if (equal? <v> (check-var-usage var)) '<get> #f)))
+
+                         ;; TODO:?
+                         (pattern-rule
+                          `(box-get ,(? 'var))
+                          (lambda (var)
+                            #f))
+                                        ;(if (equal? <v> (check-var-usage var)) '<get> #f)))
+
+                         ;; TODO:
+                         (pattern-rule
+                          `(box-set ,(? 'var) ,(? 'val))
+                          (lambda (var val)
+                            #f))
+                           #|
+                           (let ((val-res (check-var-usage val)))
+                             (if (equal? <v> (check-var-usage var))
+                                 ((accumulate-candidate <v>) '<set> val-res)
+                                 val-res))))|#
+
+                         ) e cont))))
+             run))))
+    
+    (lambda (<v> e)
+      ((run-outer <v> (lambda () (error 'check-var-usage (format "I can't recognize this: ~s" e)))) #f e))))
+
+(define to-box? (lambda (<v> body) (equal? '<get-set> (check-var-usage <v> body))))
+
+(define apply-boxing-to-var
+  (lambda (<v>)
+    (let ((fail-cont (lambda () (error 'apply-boxing-to-var (format "I can't recognize this: ~s" e)))))
+      (letrec ((run
+                (lambda (e)
+                  ((compose-patterns
+
+                    (pattern-rule
+                     `(var ,(? 'var))
+                     (lambda (var)
+                       (if (equal? <v> var)
+                           `(box-get (var ,var))
+                           `(var ,var))))
+
+                    (pattern-rule
+                     `(const ,(? 'const))
+                     (lambda (const) `(const ,const)))
+
+                    (pattern-rule
+                     `(if3 ,(? 'test) ,(? 'dit) ,(? 'dif))
+                     (lambda (test dit dif) `(if3 ,(run test) ,(run dit) ,(run dif))))
+
+                    (pattern-rule
+                     `(def ,(? 'var-name) ,(? 'val))
+                     (lambda (var-name val) `(def ,var-name ,(run val))))
+
+                    (pattern-rule
+                     `(lambda-simple ,(? 'args list?) ,(? 'body))
+                     (lambda (args body)
+                       (if (member <v> args)
+                           `(lambda-simple ,args ,body)
+                           `(lambda-simple ,args ,(run body)))))
+
+                    (pattern-rule
+                     `(lambda-opt ,(? 'args list?) ,(? 'opt-arg) ,(? 'body))
+                     (lambda (args opt-arg body)
+                       (if (or (member <v> args) (equal? <v> opt-arg))
+                           `(lambda-opt ,args ,opt-arg ,body)
+                           `(lambda-opt ,args ,opt-arg ,(run body)))))
+
+                    (pattern-rule
+                     `(lambda-var ,(? 'arg) ,(? 'body))
+                     (lambda (arg body)
+                       (if (equal? <v> arg)
+                           `(lambda-var ,arg ,body)
+                           `(lambda-var ,arg ,(run body)))))
+
+                    (pattern-rule
+                     `(applic ,(? 'func) ,(? 'exprs list?))
+                     (lambda (func exprs) `(applic ,(run func) ,(map run exprs))))
+
+                    (pattern-rule
+                     `(or ,(? 'args list?))
+                     (lambda (args) `(or ,(map run args))))
+
+                    (pattern-rule
+                     `(set ,(? 'var) ,(? 'val))
+                     (lambda (var val)
+                       (let ((val (run val)))
+                         (if (equal? <v> (cadr var))
+                             `(box-set ,var ,val)
+                             `(set ,var ,val))))) ; ,(run var) ?
+
+                    (pattern-rule
+                     `(seq ,(? 'exprs list?))
+                     (lambda (exprs) `(seq ,(map run exprs))))
+
+                    (pattern-rule
+                     `(box ,(? 'var))
+                     (lambda (var) `(box ,(run var))))
+
+                    (pattern-rule
+                     `(box-get ,(? 'var))
+                     (lambda (var) `(box-get ,(run var))))
+
+                    (pattern-rule
+                     `(box-set ,(? 'var) ,(? 'val))
+                     (lambda (var val) `(box-set ,(run var) ,(run val))))) e fail-cont))))
+        (lambda (e)
+          (run e))))))
+
+(define box-set
   (let ((run (compose-patterns
               (pattern-rule
                `(var ,(? 'var))
@@ -1601,55 +1806,74 @@
 
               (pattern-rule
                `(if3 ,(? 'test) ,(? 'dit) ,(? 'dif))
-               (lambda (test dit dif) `(if3 ,(<recurse-function> test) ,(<recurse-function> dit) ,(<recurse-function> dif))))
+               (lambda (test dit dif) `(if3 ,(box-set test) ,(box-set dit) ,(box-set dif))))
 
               (pattern-rule
                `(def ,(? 'var-name) ,(? 'val))
-               (lambda (var-name val) `(def ,var-name ,(<recurse-function> val))))
+               (lambda (var-name val) `(def ,var-name ,(box-set val))))
 
               (pattern-rule
                `(lambda-simple ,(? 'args list?) ,(? 'body))
                (lambda (args body)
-                 `(lambda-simple ,args ,(<recurse-function> body))))
+                 (let* ((<arg-status> (map (lambda (var) (cons var (to-box? var body))) args))
+                        (body (fold-left
+                               (lambda (acc-body arg-status)
+                                 (if (cdr arg-status)
+                                     ((apply-boxing-to-var (car arg-status)) acc-body)
+                                     acc-body))
+                               body
+                               <arg-status>))
+                        (setters-seq (fold-left
+                                      (lambda (acc setter) `(,@acc ,setter))
+                                      '()
+                                      (map (lambda (arg-status)
+                                             (let ((arg (car arg-status)) (status (cdr arg-status)))
+                                               (if status `(set (var ,arg) (box (var ,arg))) '())))
+                                           <arg-status>))))
+                        (if (or (null? setters-seq) (null? (car setters-seq)))
+                            `(lambda-simple ,args ,(box-set body))
+                            `(lambda-simple ,args (seq ,(append setters-seq `(,(box-set body)))))))))
 
+              ;; TODO
               (pattern-rule
                `(lambda-opt ,(? 'args list?) ,(? 'opt-arg) ,(? 'body))
-               (lambda (args opt-arg body) `(lambda-opt ,args ,opt-arg ,(<recurse-function> body))))
+               (lambda (args opt-arg body) `(lambda-opt ,args ,opt-arg ,(box-set body))))
 
+              ;; TODO
               (pattern-rule
                `(lambda-var ,(? 'arg) ,(? 'body))
-               (lambda (arg body) `(lambda-var ,arg ,(<recurse-function> body))))
+               (lambda (arg body) `(lambda-var ,arg ,(box-set body))))
 
               (pattern-rule
                `(applic ,(? 'func) ,(? 'exprs list?))
-               (lambda (func exprs) `(applic ,(<recurse-function> func) ,(map <recurse-function> exprs))))
+               (lambda (func exprs) `(applic ,(box-set func) ,(map box-set exprs))))
 
               (pattern-rule
                `(or ,(? 'args list?))
-               (lambda (args) `(or ,(map <recurse-function> args))))
+               (lambda (args) `(or ,(map box-set args))))
 
               (pattern-rule
                `(set ,(? 'var) ,(? 'val))
-               (lambda (var val) `(set ,(<recurse-function> var) ,(<recurse-function> val))))
+               (lambda (var val) `(set ,(box-set var) ,(box-set val))))
 
               (pattern-rule
                `(seq ,(? 'exprs list?))
-               (lambda (exprs) `(seq ,(map <recurse-function> exprs))))
+               (lambda (exprs) `(seq ,(map box-set exprs))))
 
               (pattern-rule
                `(box ,(? 'var))
-               (lambda (var) `(box ,(<recurse-function> var))))
+               (lambda (var) `(box ,(box-set var))))
 
               (pattern-rule
                `(box-get ,(? 'var))
-               (lambda (var) `(box-get ,(<recurse-function> var))))
+               (lambda (var) `(box-get ,(box-set var))))
 
               (pattern-rule
                `(box-set ,(? 'var) ,(? 'val))
-               (lambda (var val) `(box-set ,(<recurse-function> var) ,(<recurse-function> val))))
+               (lambda (var val) `(box-set ,(box-set var) ,(box-set val))))
               )))
     (lambda (e)
-      (run e (lambda () (error '<recurse-function> (format "I can't recognize this: ~s" e)))))))
+      (run e (lambda () (error 'box-set (format "I can't recognize this: ~s" e)))))))
 
 
 

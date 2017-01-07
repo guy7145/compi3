@@ -216,9 +216,166 @@
                          (lambda-simple (b) (box-set (var a) (var b))))))))
                 ((const 0)))))
   (ASSERT-EQUAL (box-set (eliminate-nested-defines (parse input))) output))
+                                        ; (annotate-tc (pe->lex-pe 
+                                        ;(display (annotate-tc (pe->lex-pe (box-set (remove-applic-lambda-nil (eliminate-nested-defines 
+                                        ;(parse '(lambda (x  y) (lambda () y x (set! x 1 ))))))))))
+(newline)
+(load "hw3.so")
+                                        ;(display (full-cycle (parse '(lambda (x  y) (lambda () y x (set! x 1 ))))))
+#|(display (full-cycle (parse '(define read-stdin-to
+      (lambda (end-of-input)
+        (let ((end-of-input-list (string->list end-of-input)))
+          (letrec ((state-init
+                    (lambda (seen)
+                      (let ((ch (read-char)))
+                        (cond ((eof-object? ch)
+                               (error 'read-stdin-to
+                                      (format "Marker ~a not reached"
+                                       end-of-input)))
+                              ((char=? ch (car end-of-input-list))
+                               (state-seen seen `(,ch) (cdr end-of-input-list)))
+                              (else (state-init `(,ch ,@seen)))))))
+                   (state-seen
+                    (lambda (seen-before seen-now end-of-input-list-rest)
+                      (if (null? end-of-input-list-rest)
+                          (list->string
+                           (reverse seen-before))
+                          (let ((ch (read-char)))
+                            (cond ((eof-object? ch)
+                                   (format "Marker ~a not reached"
+                                    end-of-input))
+                                  ((char=? ch (car end-of-input-list-rest))
+                                   (state-seen seen-before
+                                    `(,ch ,@seen-now)
+                                    (cdr end-of-input-list-rest)))
+                                  (else (state-init
+                                         `(,ch ,@seen-now ,@seen-before)))))))))
+            (state-init '()))))))))|#
 
-; (annotate-tc (pe->lex-pe (box-set (remove-applic-lambda-nil (eliminate-nested-defines (parse input))))))
 
-(display (get-var-minor-index 'c '(a b c)))
+(display-colored-BIG 'full-cycle:)
+
+(define my-full-cycle
+  (lambda (e)
+    (annotate-tc
+     (pe->lex-pe
+      (box-set
+       (remove-applic-lambda-nil
+        (eliminate-nested-defines
+         (parse e))))))))
+
+(let ((input
+       '(define otherwise
+          (lambda (p message)
+            (lambda (s ret-match ret-none)
+              (p
+               s
+               ret-match
+               (let ((marker (format "-->[~a]" (list->string (list-head s *marker-length*)))))
+                 (lambda (w)
+                   (ret-none
+                    (quasiquote ((unquote-splicing w) (unquote message) (unquote marker))))))))))))
+  (ASSERT-EQUAL (my-full-cycle input) (full-cycle input)))
+
+
+(let ((input '(define caten
+                (letrec ((binary-caten
+                          (lambda (p1 p2)
+                            (lambda (s ret-match ret-none)
+                              (p1
+                               s
+                               (lambda (e1 s)
+                                 (p2
+                                  s
+                                  (lambda (e2 s)
+                                    (ret-match (cons e1 e2) s)) ret-none)) ret-none))))
+                         (loop
+                          (lambda (ps)
+                            (if (null? ps)
+                                <epsilon>
+                                (binary-caten
+                                 (car ps)
+                                 (loop (cdr ps)))))))
+                  (lambda ps (loop ps))))))
+  (display-colored (parse input))
+  (ASSERT-EQUAL (my-full-cycle input) (full-cycle input)))
+
+
+'(def (var caten) 
+  (applic 
+   (lambda-simple 
+    (binary-caten loop) 
+    (seq ((set 
+           (var binary-caten) 
+           (lambda-simple (p1 p2) 
+            (lambda-simple (s ret-match ret-none) 
+             (applic (var p1) 
+              ((var s) 
+               (lambda-simple (e1 s) 
+                (applic (var p2) 
+                 ((var s) 
+                  (lambda-simple (e2 s) 
+                   (applic (var ret-match) 
+                    ((applic 
+                      (var cons) 
+                      ((var e1) (var e2))) (var s)))) (var ret-none)))) (var ret-none)))))) 
+          (set (var loop) 
+           (lambda-simple (ps) 
+            (if3 
+             (applic 
+              (var null?) 
+              ((var ps))) 
+             (var <epsilon>) 
+             (applic 
+              (var binary-caten) 
+              ((applic (var car) 
+                ((var ps))) 
+               (applic (var loop) 
+                ((applic (var cdr) ((var ps))))))))))
+          (applic 
+           (lambda-simple () 
+            (lambda-var ps (applic (var loop) ((var ps))))) ())))
+    ) ((const #f) (const #f))))
+
+'(def (fvar otherwise)
+  (lambda-simple (p message)
+   (lambda-simple (s ret-match ret-none)
+    (tc-applic
+     (bvar p 0 0)
+     ((pvar s 0)
+      (pvar ret-match 1)
+      (applic
+       (lambda-simple (marker)
+        (lambda-simple (w)
+         (tc-applic
+          (bvar ret-none 1 2)
+          ((applic
+            (fvar append)
+            ((pvar w 0)
+             (applic
+              (fvar cons)
+              ((bvar message 1 -1)
+               (applic
+                (fvar cons)
+                ((bvar marker 0 0)
+                 (const ())))))))))))
+       ((applic
+         (fvar format)
+         ((const -->[~a])
+          (applic (fvar list->string)
+           ((applic
+             (fvar list-head)
+             ((pvar s 0)
+              (fvar *marker-length*))))))))))))))
+
+'(def (fvar const?)
+  (applic
+   (lambda-simple
+    (simple-sexprs-predicates)
+    (lambda-simple (e)
+     (or ((applic (fvar ormap) ((lambda-simple (p?) (tc-applic (pvar p? 0) ((bvar e 0 0)))) (bvar simple-sexprs-predicates 0 0)))
+          (tc-applic (fvar quote?) ((pvar e 0))))
+         )))
+   ((applic (fvar list) ((fvar boolean?) (fvar char?) (fvar number?) (fvar string?))))))
 
 (newline)

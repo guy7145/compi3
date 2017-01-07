@@ -1,17 +1,9 @@
 (define <recurse-function>
   (let ((run (compose-patterns
               (pattern-rule
-               `(fvar ,(? 'var))
-               (lambda (var) `(fvar ,var)))
-              
-              (pattern-rule
-               `(pvar ,(? 'var) ,(? 'minor))
-               (lambda (var minor) `(pvar ,var ,minor)))
+               `(var ,(? 'var))
+               (lambda (var) `(var ,var)))
 
-              (pattern-rule
-               `(bvar ,(? 'var) ,(? 'major) ,(? 'minor))
-               (lambda (var major minor) `(var ,var ,major ,minor)))
-              
               (pattern-rule
                `(const ,(? 'const))
                (lambda (const) `(const ,const)))
@@ -23,7 +15,7 @@
               (pattern-rule
                `(def ,(? 'var-name) ,(? 'val))
                (lambda (var-name val) `(def ,var-name ,(<recurse-function> val))))
-              
+
               (pattern-rule
                `(lambda-simple ,(? 'args list?) ,(? 'body))
                (lambda (args body)
@@ -52,21 +44,21 @@
               (pattern-rule
                `(seq ,(? 'exprs list?))
                (lambda (exprs) `(seq ,(map <recurse-function> exprs))))
-              
+
               (pattern-rule
                `(box ,(? 'var))
                (lambda (var) `(box ,(<recurse-function> var))))
-              
+
               (pattern-rule
                `(box-get ,(? 'var))
                (lambda (var) `(box-get ,(<recurse-function> var))))
-              
+
               (pattern-rule
                `(box-set ,(? 'var) ,(? 'val))
                (lambda (var val) `(box-set ,(<recurse-function> var) ,(<recurse-function> val))))
-              
-              
-              
               )))
+    
     (lambda (e)
       (run e (lambda () (error '<recurse-function> (format "I can't recognize this: ~s" e)))))))
+
+
