@@ -277,7 +277,6 @@
                     (quasiquote ((unquote-splicing w) (unquote message) (unquote marker))))))))))))
   (ASSERT-EQUAL (my-full-cycle input) (full-cycle input)))
 
-
 (let ((input '(define caten
                 (letrec ((binary-caten
                           (lambda (p1 p2)
@@ -297,88 +296,31 @@
                                  (car ps)
                                  (loop (cdr ps)))))))
                   (lambda ps (loop ps))))))
-  (display-colored-2 (parse input))
   (ASSERT-EQUAL (my-full-cycle input) (full-cycle input)))
 
 
-'(def (var caten) 
-  (applic 
-   (lambda-simple 
-    (binary-caten loop) 
-    (seq ((set 
-           (var binary-caten) 
-           (lambda-simple (p1 p2) 
-            (lambda-simple (s ret-match ret-none) 
-             (applic (var p1) 
-              ((var s) 
-               (lambda-simple (e1 s) 
-                (applic (var p2) 
-                 ((var s) 
-                  (lambda-simple (e2 s) 
-                   (applic (var ret-match) 
-                    ((applic 
-                      (var cons) 
-                      ((var e1) (var e2))) (var s)))) (var ret-none)))) (var ret-none)))))) 
-          (set (var loop) 
-           (lambda-simple (ps) 
-            (if3 
-             (applic 
-              (var null?) 
-              ((var ps))) 
-             (var <epsilon>) 
-             (applic 
-              (var binary-caten) 
-              ((applic (var car) 
-                ((var ps))) 
-               (applic (var loop) 
-                ((applic (var cdr) ((var ps))))))))))
-          (applic 
-           (lambda-simple () 
-            (lambda-var ps (applic (var loop) ((var ps))))) ())))
-    ) ((const #f) (const #f))))
+(let ((input '(define ^word-suffixes
+                (lambda (char)
+                  (letrec ((loop
+                            (lambda (s)
+                              (if (null? s)
+                                  <epsilon>
+                                  (maybe (caten (char (car s)) (loop (cdr s))))))))
+                    (lambda (suffix) (loop (string->list suffix))))))))
+  (ASSERT-EQUAL (my-full-cycle input) (full-cycle input)))
 
-'(def (fvar otherwise)
-  (lambda-simple (p message)
-   (lambda-simple (s ret-match ret-none)
-    (tc-applic
-     (bvar p 0 0)
-     ((pvar s 0)
-      (pvar ret-match 1)
-      (applic
-       (lambda-simple (marker)
-        (lambda-simple (w)
-         (tc-applic
-          (bvar ret-none 1 2)
-          ((applic
-            (fvar append)
-            ((pvar w 0)
-             (applic
-              (fvar cons)
-              ((bvar message 1 -1)
-               (applic
-                (fvar cons)
-                ((bvar marker 0 0)
-                 (const ())))))))))))
-       ((applic
-         (fvar format)
-         ((const -->[~a])
-          (applic (fvar list->string)
-           ((applic
-             (fvar list-head)
-             ((pvar s 0)
-              (fvar *marker-length*))))))))))))))
-
-'(def (fvar const?)
-  (applic
-   (lambda-simple
-    (simple-sexprs-predicates)
-    (lambda-simple (e)
-     (or ((applic (fvar ormap) ((lambda-simple (p?) (tc-applic (pvar p? 0) ((bvar e 0 0)))) (bvar simple-sexprs-predicates 0 0)))
-          (tc-applic (fvar quote?) ((pvar e 0))))
-         )))
-   ((applic (fvar list) ((fvar boolean?) (fvar char?) (fvar number?) (fvar string?))))))
+(let ((input '(lambda x x (lambda (a b) (set! x 1)))))
+  (ASSERT-EQUAL (my-full-cycle input) (full-cycle input)))
 
 
-(display-colored-BIG (get-var-major-index 'message '((marker) (s ret-match ret-none) (p message) ())))
+'(lambda-simple (x y)
+  (seq
+   ((set (var x) (box (var x)))
+    ()
+    (lambda-simple ()
+     (seq
+      ((var y)
+       (box-get (var x))
+       (box-set (var x) (const 1))))))))
 
 (newline)

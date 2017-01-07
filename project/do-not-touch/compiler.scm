@@ -1221,7 +1221,7 @@
                       `(lambda-simple () ,(? 'body))
                       (lambda (body) body))))
                 (pattern-rule ;; here
-                 `(applic ,(? 'lambda-nil (lambda (e) (lambda-nil-body-get e (lambda () #f)))) ,(? 'args))
+                 `(applic ,(? 'lambda-nil (lambda (e) (lambda-nil-body-get e (lambda () #f)))) ,(? 'args null?))
                  (lambda (lambda-nil args) (remove-applic-lambda-nil (lambda-nil-body-get lambda-nil (lambda () #f))))))
 
               (pattern-rule
@@ -1272,7 +1272,7 @@
 ;; _________eliminate-nested-def___________________________________
 ;; ________________________________________________________________
 
-
+#| from Mayer's class |#
 (define <<exract-def>>
   (lambda (pes ret-ds-es)
     (if (null? pes) (ret-ds-es '() '())
@@ -1289,24 +1289,20 @@
 
 (define ^letrec-statement
   (lambda (args body ^lambda)
-    (<<exract-def>>
-     `(,(eliminate-nested-defines body))
-     (lambda (ds es)
-       (if (null? ds)
-                                        ; dit
-           (if (equal? (length es) 1)
-               (^lambda args (car es))
-               (^lambda args `(seq ,es)))
-                                        ; dif
-           (let ((params
-                  ;;                   def name
-                  (map (lambda (def) (cadadr def)) ds))
-                 (<dummy-values>
-                  (map (lambda (def) `(const #f)) ds))
-                 ;;                                              def-var      def-val
-                 (body `(seq ,(append (map (lambda (def) `(set ,(cadr def) ,(caddr def))) ds) es))))
-             (^lambda args `(applic (lambda-simple ,params ,body) ,<dummy-values>))))
-       ))))
+    (<<exract-def>> `(,(eliminate-nested-defines body))
+                    (lambda (ds es)
+                      (if (null? ds)
+                          
+                          (if (equal? (length es) 1)
+                              (^lambda args (car es))
+                              (^lambda args `(seq ,es)))
+                          
+                          ;;                                 def-name
+                          (let ((params (map (lambda (def) (cadadr def)) ds))
+                                (<dummy-values> (map (lambda (def) `(const #f)) ds))
+                                (body `(seq ,(append (map (lambda (def) `(set ,(cadr def) ,(caddr def))) ds) es))))
+                            (^lambda args `(applic (lambda-simple ,params ,body) ,<dummy-values>))))
+                      ))))
 
 (define eliminate-nested-defines
   (let ((^lambda-simple (lambda (args body) `(lambda-simple ,args ,body)))
@@ -1695,7 +1691,7 @@
                          (pattern-rule
                           `(set ,(? 'var) ,(? 'val))
                           (lambda (var val)
-                            (let ((set-usage `(,(equal? (cadr var) <v>) ,#f ,#f)))
+                            (let ((set-usage `(,(equal? (cadr var) <v>) ,#f ,is-bound?)))
                               (usage-or set-usage (run is-bound? val)))))
 
                          (pattern-rule
@@ -1704,8 +1700,7 @@
                             (let ((results (map (lambda (x) (run is-bound? x)) exprs)))
                                         ;(let ((results (map (lambda (x) (validate-candidate <v> x)) results)))
                               (fold-left accumulate-usage empty-usage results))))
-
-
+                         
                          (pattern-rule
                           `(box ,(? 'var))
                           (lambda (var)
@@ -1846,6 +1841,7 @@
                                                                (if status `(set (var ,arg) (box (var ,arg))) '())))
                                                            <args-usage-statuses>)))))
                 (compose-patterns
+                 
                  (pattern-rule
                   `(lambda-simple ,(? 'args list?) ,(? 'body))
                   (lambda (args body)
@@ -1854,10 +1850,10 @@
                            (setters-seq (^<setters-seq> <args-usage-statuses>)))
                       (if (or (null? setters-seq) (null? (car setters-seq)))
                           `(lambda-simple ,args ,(box-set body))
-                          `(lambda-simple ,args (seq ,(append setters-seq `(,(box-set body)))))))))
+                          (if (equal? (car body) 'seq)
+                              `(lambda-simple ,args (seq ,(append setters-seq (flatten-list (cdr (box-set body))))))
+                              `(lambda-simple ,args (seq ,(append setters-seq `(,(box-set body))))))))))
 
-
-                 ;; should be tested
                  (pattern-rule
                   `(lambda-opt ,(? 'args list?) ,(? 'opt-arg) ,(? 'body))
                   (lambda (args opt-arg body)
@@ -1866,9 +1862,10 @@
                            (setters-seq (^<setters-seq> <args-usage-statuses>)))
                       (if (or (null? setters-seq) (null? (car setters-seq)))
                           `(lambda-opt ,args ,opt-arg ,(box-set body))
-                          `(lambda-opt ,args ,opt-arg (seq ,(append setters-seq `(,(box-set body)))))))))
+                          (if (equal? (car body) 'seq)
+                              `(lambda-opt ,args ,opt-arg (seq ,(append setters-seq (flatten-list (cdr (box-set body))))))
+                              `(lambda-opt ,args ,opt-arg (seq ,(append setters-seq `(,(box-set body))))))))))
 
-                 ;; should be tested
                  (pattern-rule
                   `(lambda-var ,(? 'arg) ,(? 'body))
                   (lambda (arg body)
@@ -1877,7 +1874,9 @@
                            (setters-seq (^<setters-seq> <args-usage-statuses>)))
                       (if (or (null? setters-seq) (null? (car setters-seq)))
                           `(lambda-var ,arg ,(box-set body))
-                          `(lambda-var ,arg (seq ,(append setters-seq `(,(box-set body)))))))))))
+                          (if (equal? (car body) 'seq)
+                              `(lambda-var ,arg (seq ,(append setters-seq (flatten-list (cdr (box-set body))))))
+                              `(lambda-var ,arg (seq ,(append setters-seq `(,(box-set body))))))))))))
 
                 (pattern-rule
                  `(applic ,(? 'func) ,(? 'exprs list?))

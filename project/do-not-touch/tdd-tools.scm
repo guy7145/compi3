@@ -6,6 +6,7 @@
 (define display-colored-2 (lambda (msg) (display (format "\033[1;30m ~s \033[0m \n" msg))))
 (define display-colored-title (lambda (msg) (display (format "\033[1;33m ~s: \033[0m \n" msg))))
 (define display-colored-BIG (lambda (msg) (display (format "\033[1;36m ~s \033[0m \n" msg))))
+(define display-colored-BIG-title (lambda (msg) (display (format "\033[1;36m ~s: \033[0m \n" msg))))
 ;; testing tools
 ;;
 (define default-succ-cont (lambda () (display-green 'success!)))
