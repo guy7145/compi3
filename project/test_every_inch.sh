@@ -17,11 +17,13 @@ echo "__________________________________________________________________________
 # --HW1-------------------------------------------------------
 
 echo HW1 compare tests:
-#echo commented out...
-scheme --script compare-tests-hw1.scm | grep TESTS
+echo commented out...
+#scheme --script compare-tests-hw1.scm | grep TESTS
 
 
 # --HW2-------------------------------------------------------
+
+#<<COMMENT
 
 # .::part1::.
 echo HW2 part1 compare tests:
@@ -37,7 +39,6 @@ scheme --script compare-tests-hw2-CSE.scm | grep TESTS
 echo HW2 part2 my compare tests:
 scheme --script my-compare-tests-hw2-CSE.scm | grep TESTS
 
-#<<COMMENT
 #COMMENT
 
 # --HW3-------------------------------------------------------
@@ -45,9 +46,9 @@ scheme --script my-compare-tests-hw2-CSE.scm | grep TESTS
 echo HW3 tdd:
 scheme --script test-hw3.scm 
 
-echo HW3 compare tests: "(partly!!)"
+echo HW3 compare tests:
 #echo commented out...
-scheme --script compare-tests-hw3.scm | grep TESTS
+scheme --script compare-tests-hw3.scm #| grep TESTS
 
 #echo HW3 my compare tests:
 #echo commented out...

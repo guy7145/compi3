@@ -51,13 +51,20 @@
 
 (define ASSERT-EQUAL
   (lambda (result expected)
-      (cond ((equal? result expected) (display-green "passed!\n"))
+      (cond ((equal? result expected) (begin (display-green "passed!\n") #t))
 	    (else (begin
 		    (display-red "failed!\n")
-		    (display "expected:\t")
+		    (display-colored-title 'expected:)
 		    (display expected)
 		    (newline)
-		    (display "actual:\t\t")
+		    (display-colored-title 'actual:)
 		    (display result)
-		    (newline))))
+		    (newline)
+                #f)))
       ))
+
+(define ASSERT-EQUAL-ex
+  (lambda (input parse f1 f2)
+    (if (not (ASSERT-EQUAL (f1 input) (f2 input)))
+        (begin (display-colored input) (display-colored-2 (parse input)) #f)
+        #t)))

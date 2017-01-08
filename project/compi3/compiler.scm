@@ -1304,6 +1304,7 @@
                             (^lambda args `(applic (lambda-simple ,params ,body) ,<dummy-values>))))
                       ))))
 
+#| almost identical to the template template |#
 (define eliminate-nested-defines
   (let ((^lambda-simple (lambda (args body) `(lambda-simple ,args ,body)))
         (^lambda-opt (lambda (args-opt body) `(lambda-opt ,(car args-opt) ,(cdr args-opt) ,body)))
@@ -1525,7 +1526,7 @@
 
                               (pattern-rule
                                `(if3 ,(? 'test) ,(? 'dit) ,(? 'dif))
-                               (lambda (test dit dif) `(if3 ,((run-inner #f) test) ,((run-inner #t) dit) ,((run-inner #t) dif))))
+                               (lambda (test dit dif) `(if3 ,((run-inner #f) test) ,((run-inner should-annotate?) dit) ,((run-inner should-annotate?) dif))))
 
                               (pattern-rule
                                `(def ,(? 'var-name) ,(? 'val))
@@ -1534,15 +1535,15 @@
                               (pattern-rule
                                `(lambda-simple ,(? 'args list?) ,(? 'body))
                                (lambda (args body)
-                                 `(lambda-simple ,args ,((run-inner (is-not-seq? body)) body))))
+                                 `(lambda-simple ,args ,((run-inner #t) body))))
 
                               (pattern-rule
                                `(lambda-opt ,(? 'args list?) ,(? 'opt-arg) ,(? 'body))
-                               (lambda (args opt-arg body) `(lambda-opt ,args ,opt-arg ,((run-inner (is-not-seq? body)) body))))
+                               (lambda (args opt-arg body) `(lambda-opt ,args ,opt-arg ,((run-inner #t) body))))
 
                               (pattern-rule
                                `(lambda-var ,(? 'arg) ,(? 'body))
-                               (lambda (arg body) `(lambda-var ,arg ,((run-inner (is-not-seq? body)) body))))
+                               (lambda (arg body) `(lambda-var ,arg ,((run-inner #t) body))))
 
                               (pattern-rule
                                `(applic ,(? 'func) ,(? 'exprs list?))
@@ -1553,7 +1554,7 @@
 
                               (pattern-rule
                                `(or ,(? 'args list?))
-                               (lambda (args) `(or ,(special-map (run-inner #f) (run-inner #t) args))))
+                               (lambda (args) `(or ,(special-map (run-inner #f) (run-inner should-annotate?) args))))
 
                               (pattern-rule
                                `(set ,(? 'var) ,(? 'val))
@@ -1561,7 +1562,7 @@
 
                               (pattern-rule
                                `(seq ,(? 'exprs list?))
-                               (lambda (exprs) `(seq ,(special-map (run-inner #f) (run-inner #t) exprs))))
+                               (lambda (exprs) `(seq ,(special-map (run-inner #f) (run-inner should-annotate?) exprs))))
 
                               (pattern-rule
                                `(box ,(? 'var))
@@ -1606,18 +1607,19 @@
           (get-flag (or (cadr usage1) (cadr usage2)))
           (bound-flag (or (caddr usage1) (caddr usage2))))
       `(,set-flag ,get-flag ,bound-flag))))
+
 (define usage-add-set
   (lambda (usage)
-    (usage-or usage
-              `(,#t #f #f))))
+    (usage-or usage `(,#t #f #f))))
+
 (define usage-add-get
   (lambda (usage)
-    (usage-or usage
-              `(,#f #t #f))))
+    (usage-or usage `(,#f #t #f))))
+
 (define usage-add-bound
   (lambda (usage)
-    (usage-or usage
-              `(,#f #f #t))))
+    (usage-or usage `(,#f #f #t))))
+
 (define accumulate-usage
   (lambda (x y) (usage-or x y)))
 
@@ -1691,7 +1693,7 @@
                          (pattern-rule
                           `(set ,(? 'var) ,(? 'val))
                           (lambda (var val)
-                            (let ((set-usage `(,(equal? (cadr var) <v>) ,#f ,is-bound?)))
+                            (let ((set-usage (if (equal? (cadr var) <v>) `(,#t ,#f ,is-bound?) empty-usage)))
                               (usage-or set-usage (run is-bound? val)))))
 
                          (pattern-rule
@@ -1834,7 +1836,7 @@
                                                            <args-usage-statuses>)))
                     (^<setters-seq>
                      (lambda (<args-usage-statuses>) (fold-left
-                                                      (lambda (acc setter) `(,@acc ,setter))
+                                                      (lambda (acc setter) (if (null? setter) acc `(,@acc ,setter)))
                                                       '()
                                                       (map (lambda (arg-status)
                                                              (let ((arg (car arg-status)) (status (cdr arg-status)))
