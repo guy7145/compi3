@@ -315,19 +315,4 @@
 (let ((input '(lambda (x y) (+ y 2) (set! y 2) (lambda (z) (set! x x)))))
   (ASSERT-EQUAL (my-full-cycle input) (full-cycle input)))
 
-(let ((input
-       '(lambda (a b)
-          (begin ((quasiquote define)
-                  iszero
-                  (lambda (a b)
-                    (or (zero? a) (zero? b))))
-            (define min1 (lambda (a) (- a 1)))
-            (define min2 (lambda (b) (- (min1 b) 2))))
-          (if (iszero a b)
-              (min1 a)
-              (min2 b)))))
-  (display-colored-BIG (eliminate-nested-defines (parse input)))
-  
-  (ASSERT-EQUAL-ex input parse my-full-cycle full-cycle))
-
 (newline)

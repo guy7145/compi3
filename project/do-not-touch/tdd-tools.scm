@@ -51,9 +51,9 @@
 
 (define ASSERT-EQUAL
   (lambda (result expected)
-      (cond ((equal? result expected) (begin (display-green "passed!\n") #t))
+      (cond ((equal? result expected) (begin (display-green 'passed!) #t))
 	    (else (begin
-		    (display-red "failed!\n")
+		    (display-red 'failed!)
 		    (display-colored-title 'expected:)
 		    (display expected)
 		    (newline)

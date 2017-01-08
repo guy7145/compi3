@@ -17,8 +17,8 @@ echo "__________________________________________________________________________
 # --HW1-------------------------------------------------------
 
 echo HW1 compare tests:
-echo commented out...
-#scheme --script compare-tests-hw1.scm | grep TESTS
+#echo commented out...
+scheme --script compare-tests-hw1.scm | grep TESTS
 
 
 # --HW2-------------------------------------------------------
@@ -47,9 +47,9 @@ echo HW3 tdd:
 scheme --script test-hw3.scm 
 
 echo HW3 compare tests:
-#echo commented out...
-scheme --script compare-tests-hw3.scm #| grep TESTS
+scheme --script compare-tests-hw3.scm | grep TESTS
 
+# i have no custom compare tests... :(
 #echo HW3 my compare tests:
 #echo commented out...
 #scheme --script my-compare-tests-hw3.scm
